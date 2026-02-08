@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Financial Report - InvenLogic Pro{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-chart-pie"></i> Financial Report</h1>
+</div>
+
+<!-- Date Filter -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('financial_report') }}" style="display: flex; gap: 1rem; align-items: end;">
+            <div class="form-group" style="margin: 0;">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}" required>
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-filter"></i> Filter
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Financial Summary Cards -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <i class="fas fa-dollar-sign"></i>
+        </div>
+        <div class="stat-details">
+            <h3>${{ "%.2f"|format(summary.total_revenue) if summary.total_revenue else "0.00" }}</h3>
+            <p>Total Revenue</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <i class="fas fa-receipt"></i>
+        </div>
+        <div class="stat-details">
+            <h3>{{ summary.total_transactions if summary.total_transactions else 0 }}</h3>
+            <p>Total Transactions</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-details">
+            <h3>${{ "%.2f"|format(summary.avg_transaction) if summary.avg_transaction else "0.00" }}</h3>
+            <p>Avg Transaction</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <i class="fas fa-warehouse"></i>
+        </div>
+        <div class="stat-details">
+            <h3>${{ "%.2f"|format(inventory_value.inventory_value) if inventory_value.inventory_value else "0.00" }}</h3>
+            <p>Inventory Value</p>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Revenue Trend -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2 class="card-title">Monthly Revenue Trend</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Revenue</th>
+                        <th>Orders</th>
+                        <th>Avg per Order</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if monthly_revenue %}
+                        {% for month_data in monthly_revenue %}
+                        <tr>
+                            <td><strong>{{ month_data.month }}</strong></td>
+                            <td>${{ "%.2f"|format(month_data.revenue) }}</td>
+                            <td>{{ month_data.orders }}</td>
+                            <td>${{ "%.2f"|format(month_data.revenue / month_data.orders) if month_data.orders > 0 else "0.00" }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr style="background: var(--bg-secondary); font-weight: 600;">
+                            <td>TOTAL</td>
+                            <td>${{ "%.2f"|format(monthly_revenue|sum(attribute='revenue')) }}</td>
+                            <td>{{ monthly_revenue|sum(attribute='orders') }}</td>
+                            <td>-</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-secondary);">No revenue data available for this period</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue by Category -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2 class="card-title">Revenue by Category</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Units Sold</th>
+                        <th>Revenue</th>
+                        <th>% of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if category_revenue %}
+                        {% set total_revenue = category_revenue|sum(attribute='revenue') %}
+                        {% for cat in category_revenue %}
+                        <tr>
+                            <td><span class="badge badge-info">{{ cat.category }}</span></td>
+                            <td>{{ cat.units_sold }}</td>
+                            <td>${{ "%.2f"|format(cat.revenue) }}</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="flex: 1; background: var(--bg-secondary); border-radius: 1rem; height: 8px; overflow: hidden;">
+                                        <div style="background: var(--primary); height: 100%; width: {{ (cat.revenue / total_revenue * 100)|round(2) if total_revenue > 0 else 0 }}%;"></div>
+                                    </div>
+                                    <span style="min-width: 50px; text-align: right;">{{ "%.1f"|format(cat.revenue / total_revenue * 100) if total_revenue > 0 else "0.0" }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <tr style="background: var(--bg-secondary); font-weight: 600;">
+                            <td>TOTAL</td>
+                            <td>{{ category_revenue|sum(attribute='units_sold') }}</td>
+                            <td>${{ "%.2f"|format(total_revenue) }}</td>
+                            <td>100%</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-secondary);">No category data available for this period</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Insights -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Financial Insights</h2>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <!-- Revenue Performance -->
+            <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 0.5rem; border-left: 4px solid var(--success);">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="width: 48px; height: 48px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.5rem;">${{ "%.2f"|format(summary.total_revenue) if summary.total_revenue else "0.00" }}</h3>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">Total Revenue</p>
+                    </div>
+                </div>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    From {{ summary.total_transactions if summary.total_transactions else 0 }} completed transactions
+                </p>
+            </div>
+
+            <!-- Inventory Value -->
+            <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 0.5rem; border-left: 4px solid var(--primary);">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="width: 48px; height: 48px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.5rem;">${{ "%.2f"|format(inventory_value.inventory_value) if inventory_value.inventory_value else "0.00" }}</h3>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">Current Inventory Value</p>
+                    </div>
+                </div>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Total value of all products in stock
+                </p>
+            </div>
+
+            <!-- Average Transaction -->
+            <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 0.5rem; border-left: 4px solid var(--warning);">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="width: 48px; height: 48px; background: var(--warning); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.5rem;">${{ "%.2f"|format(summary.avg_transaction) if summary.avg_transaction else "0.00" }}</h3>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">Average Transaction</p>
+                    </div>
+                </div>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">
+                    Average value per completed sale
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

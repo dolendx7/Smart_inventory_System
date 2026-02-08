@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Alerts - InvenLogic Pro{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-bell"></i> Stock Alerts</h1>
+</div>
+<div class="card">
+    {% if alerts %}
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th>Current Stock</th>
+                    <th>Reorder Level</th>
+                    <th>Supplier</th>
+                    <th>Contact</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in alerts %}
+                <tr>
+                    <td>{{ alert.product_name }}</td>
+                    <td>{{ alert.sku }}</td>
+                    <td>{{ alert.category }}</td>
+                    <td><span class="badge badge-danger">{{ alert.stock_quantity }}</span></td>
+                    <td>{{ alert.reorder_level }}</td>
+                    <td>{{ alert.supplier_name or 'N/A' }}</td>
+                    <td>{{ alert.supplier_email or 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-check-circle"></i>
+        <p>No low stock alerts. All products are adequately stocked!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

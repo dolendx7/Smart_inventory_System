@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}Inventory Report - InvenLogic Pro{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-warehouse"></i> Inventory Report</h1>
+    <div class="header-actions">
+        <button onclick="window.print()" class="btn btn-secondary">
+            <i class="fas fa-print"></i> Print Report
+        </button>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <i class="fas fa-box"></i>
+        </div>
+        <div class="stat-details">
+            <h3>{{ summary.total_products if summary.total_products else 0 }}</h3>
+            <p>Total Products</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <i class="fas fa-cubes"></i>
+        </div>
+        <div class="stat-details">
+            <h3>{{ summary.total_items if summary.total_items else 0 }}</h3>
+            <p>Total Items in Stock</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <i class="fas fa-dollar-sign"></i>
+        </div>
+        <div class="stat-details">
+            <h3>${{ "%.2f"|format(summary.total_value) if summary.total_value else "0.00" }}</h3>
+            <p>Total Inventory Value</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-details">
+            <h3>{{ (summary.out_of_stock if summary.out_of_stock else 0) + (summary.low_stock if summary.low_stock else 0) }}</h3>
+            <p>Alerts (Low/Out of Stock)</p>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Status Overview -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2 class="card-title">Stock Status Overview</h2>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            <!-- In Stock -->
+            <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 0.5rem; border-left: 4px solid var(--success);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.75rem;">{{ (summary.total_products if summary.total_products else 0) - (summary.out_of_stock if summary.out_of_stock else 0) - (summary.low_stock if summary.low_stock else 0) }}</h3>
+                        <p style="margin: 0; color: var(--text-secondary);">In Stock</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock -->
+            <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 0.5rem; border-left: 4px solid var(--warning);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; background: var(--warning); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.75rem;">{{ summary.low_stock if summary.low_stock else 0 }}</h3>
+                        <p style="margin: 0; color: var(--text-secondary);">Low Stock</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Out of Stock -->
+            <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 0.5rem; border-left: 4px solid var(--danger);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; background: var(--danger); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.75rem;">{{ summary.out_of_stock if summary.out_of_stock else 0 }}</h3>
+                        <p style="margin: 0; color: var(--text-secondary);">Out of Stock</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory by Category -->
+{% set categories = products|groupby('category') %}
+{% for category, items in categories %}
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span class="badge badge-info">{{ category }}</span>
+            <span style="font-size: 0.875rem; font-weight: normal; color: var(--text-secondary); margin-left: 1rem;">
+                {{ items|length }} products | 
+                {{ items|sum(attribute='stock_quantity') }} items | 
+                ${{ "%.2f"|format(items|sum(attribute='stock_value')) }}
+            </span>
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Product Name</th>
+                        <th>Supplier</th>
+                        <th>Unit Price</th>
+                        <th>Stock Qty</th>
+                        <th>Reorder Level</th>
+                        <th>Stock Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in items %}
+                    <tr>
+                        <td><code>{{ product.sku }}</code></td>
+                        <td><strong>{{ product.product_name }}</strong></td>
+                        <td>{{ product.supplier_name if product.supplier_name else 'N/A' }}</td>
+                        <td>${{ "%.2f"|format(product.unit_price) }}</td>
+                        <td>
+                            <strong>{{ product.stock_quantity }}</strong>
+                            {% if product.stock_quantity <= product.reorder_level %}
+                                <i class="fas fa-exclamation-circle" style="color: var(--danger); margin-left: 0.25rem;"></i>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.reorder_level }}</td>
+                        <td><strong>${{ "%.2f"|format(product.stock_value) }}</strong></td>
+                        <td>
+                            {% if product.stock_status == 'Out of Stock' %}
+                                <span class="badge badge-danger">{{ product.stock_status }}</span>
+                            {% elif product.stock_status == 'Low Stock' %}
+                                <span class="badge badge-warning">{{ product.stock_status }}</span>
+                            {% else %}
+                                <span class="badge badge-success">{{ product.stock_status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot style="background: var(--bg-secondary); font-weight: 600;">
+                    <tr>
+                        <td colspan="4" style="text-align: right;">Category Total:</td>
+                        <td>{{ items|sum(attribute='stock_quantity') }}</td>
+                        <td>-</td>
+                        <td>${{ "%.2f"|format(items|sum(attribute='stock_value')) }}</td>
+                        <td>-</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Products Requiring Attention -->
+{% set alert_products = products|selectattr('stock_status', 'in', ['Low Stock', 'Out of Stock'])|list %}
+{% if alert_products %}
+<div class="card">
+    <div class="card-header" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+        <h2 class="card-title" style="color: white;">
+            <i class="fas fa-exclamation-triangle"></i> Products Requiring Immediate Attention
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Supplier</th>
+                        <th>Current Stock</th>
+                        <th>Reorder Level</th>
+                        <th>Max Stock</th>
+                        <th>Recommended Order</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in alert_products|sort(attribute='stock_quantity') %}
+                    <tr>
+                        <td><code>{{ product.sku }}</code></td>
+                        <td><strong>{{ product.product_name }}</strong></td>
+                        <td><span class="badge badge-info">{{ product.category }}</span></td>
+                        <td>{{ product.supplier_name if product.supplier_name else 'N/A' }}</td>
+                        <td>
+                            <strong style="color: {% if product.stock_quantity == 0 %}var(--danger){% else %}var(--warning){% endif %};">
+                                {{ product.stock_quantity }}
+                            </strong>
+                        </td>
+                        <td>{{ product.reorder_level }}</td>
+                        <td>{{ product.max_stock_level }}</td>
+                        <td>
+                            <strong style="color: var(--primary);">
+                                {{ product.max_stock_level - product.stock_quantity }}
+                            </strong>
+                        </td>
+                        <td>
+                            {% if product.stock_status == 'Out of Stock' %}
+                                <span class="badge badge-danger">{{ product.stock_status }}</span>
+                            {% else %}
+                                <span class="badge badge-warning">{{ product.stock_status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+@media print {
+    .sidebar, .header-actions, .btn {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 1rem !important;
+    }
+    .card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+</style>
+
+{% endblock %}

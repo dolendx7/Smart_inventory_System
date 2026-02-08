@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Profile - InvenLogic Pro{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-user"></i> My Profile</h1>
+</div>
+<div class="card">
+    <h3>Account Information</h3>
+    <form method="POST" action="{{ url_for('update_profile') }}">
+        <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-control" name="username" value="{{ user.username }}" required minlength="2" pattern="[^0-9]*" title="Username cannot contain numbers">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email" value="{{ user.email }}" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Please enter a valid email with @">
+        </div>
+ 
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Profile</button>
+    </form>
+</div>
+<div class="card">
+    <h3>Change Password</h3>
+    <form method="POST" action="{{ url_for('change_password') }}">
+        <div class="form-group">
+            <label class="form-label">Current Password</label>
+            <input type="password" class="form-control" name="current_password" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" class="form-control" name="new_password" required minlength="8" pattern=".*[!@#$%^&*(),.?&quot;:{}|<>_\-+=\[\]\\\/;~`].*" title="Password must be at least 8 characters and contain a special character">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" class="form-control" name="confirm_password" required>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Change Password</button>
+    </form>
+</div>
+{% endblock %}
