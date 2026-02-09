@@ -4,9 +4,9 @@
 <div class="page-header">
     <h1 class="page-title"><i class="fas fa-box"></i> Products</h1>
     <div class="header-actions">
-        <a href="{{ url_for('add_product') }}" class="btn btn-primary">
+        <button type="button" class="btn btn-primary" onclick="openAddProductModal()">
             <i class="fas fa-plus"></i> Add Product
-        </a>
+        </button>
     </div>
 </div>
 
@@ -54,10 +54,10 @@
                             {% endif %}
                         </td>
                         <td class="table-actions">
-                            <a href="{{ url_for('edit_product', id=product.id) }}" class="action-btn edit" title="Edit">
+                            <button type="button" class="action-btn edit" title="Edit" onclick="openEditProductModal({{ product.id }}, '{{ product.sku }}', '{{ product.product_name }}', '{{ product.description|replace("'", "\\'") }}', '{{ product.category }}', {{ product.unit_price }}, {{ product.stock_quantity }}, {{ product.reorder_level }}, {{ product.max_stock_level }}, {{ product.supplier_id if product.supplier_id else 'null' }})">
                                 <i class="fas fa-edit"></i>
-                            </a>
-                            <form method="POST" action="{{ url_for('delete_product', id=product.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure?')">
+                            </button>
+                            <form method="POST" action="{{ url_for('delete_product', id=product.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this product?')">
                                 <button type="submit" class="action-btn delete" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -70,4 +70,112 @@
         </div>
     </div>
 </div>
+
+<!-- Add/Edit Product Modal -->
+<div id="productModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle"><i class="fas fa-plus"></i> Add New Product</h2>
+            <button type="button" class="modal-close" onclick="closeProductModal()">&times;</button>
+        </div>
+        <form id="productForm" method="POST" action="{{ url_for('add_product') }}">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">SKU *</label>
+                        <input type="text" class="form-control" name="sku" id="sku" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Product Name *</label>
+                        <input type="text" class="form-control" name="product_name" id="product_name" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" name="description" id="description"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Category *</label>
+                        <input type="text" class="form-control" name="category" id="category" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Unit Price *</label>
+                        <input type="number" step="0.01" class="form-control" name="unit_price" id="unit_price" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Stock Quantity *</label>
+                        <input type="number" class="form-control" name="stock_quantity" id="stock_quantity" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reorder Level *</label>
+                        <input type="number" class="form-control" name="reorder_level" id="reorder_level" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Stock Level *</label>
+                        <input type="number" class="form-control" name="max_stock_level" id="max_stock_level" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Supplier</label>
+                    <select class="form-control" name="supplier_id" id="supplier_id">
+                        <option value="">Select Supplier</option>
+                        {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}">{{ supplier.supplier_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> <span id="submitBtnText">Save Product</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddProductModal() {
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Add New Product';
+    document.getElementById('submitBtnText').textContent = 'Save Product';
+    document.getElementById('productForm').action = "{{ url_for('add_product') }}";
+    document.getElementById('productForm').reset();
+    document.getElementById('productModal').style.display = 'block';
+}
+
+function openEditProductModal(id, sku, name, description, category, price, stock, reorder, maxStock, supplierId) {
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Product';
+    document.getElementById('submitBtnText').textContent = 'Update Product';
+    document.getElementById('productForm').action = "{{ url_for('edit_product', id=0) }}".replace('/0', '/' + id);
+    
+    document.getElementById('sku').value = sku;
+    document.getElementById('product_name').value = name;
+    document.getElementById('description').value = description;
+    document.getElementById('category').value = category;
+    document.getElementById('unit_price').value = price;
+    document.getElementById('stock_quantity').value = stock;
+    document.getElementById('reorder_level').value = reorder;
+    document.getElementById('max_stock_level').value = maxStock;
+    document.getElementById('supplier_id').value = supplierId || '';
+    
+    document.getElementById('productModal').style.display = 'block';
+}
+
+function closeProductModal() {
+    document.getElementById('productModal').style.display = 'none';
+    document.getElementById('productForm').reset();
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('productModal');
+    if (event.target == modal) {
+        closeProductModal();
+    }
+}
+</script>
 {% endblock %}

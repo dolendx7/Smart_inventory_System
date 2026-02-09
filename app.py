@@ -182,10 +182,17 @@ def signup():
                     "INSERT INTO admins (username, email, password) VALUES (%s, %s, %s)",
                     (username, email, hash_password(password))
                 )
+                admin_id = cursor.lastrowid
                 
                 conn.commit()
-                flash('Admin account created successfully! Please login.', 'success')
-                return redirect(url_for('login'))
+                
+                # Automatically log in the user after successful signup
+                session['admin_id'] = admin_id
+                session['username'] = username
+                session['email'] = email
+                
+                flash('Account created successfully! Welcome to your dashboard.', 'success')
+                return redirect(url_for('dashboard'))
             except Error as e:
                 conn.rollback()
                 flash(f'Error creating account: {str(e)}', 'error')
@@ -194,8 +201,6 @@ def signup():
                 conn.close()
     
     return render_template('signup.html')
-
-# This function is no longer needed as we use a single shared database
 
 @app.route('/logout')
 def logout():
@@ -351,120 +356,104 @@ def products():
     cursor.execute("SELECT DISTINCT category FROM products WHERE admin_id = %s ORDER BY category", (admin_id,))
     categories = cursor.fetchall()
     
+    # Get suppliers for modal dropdown
+    cursor.execute("SELECT id, supplier_name FROM suppliers WHERE admin_id = %s ORDER BY supplier_name", (admin_id,))
+    suppliers = cursor.fetchall()
+    
     cursor.close()
     conn.close()
     
-    return render_template('products.html', products=products_list, categories=categories)
+    return render_template('products.html', products=products_list, categories=categories, suppliers=suppliers)
 
-@app.route('/products/add', methods=['GET', 'POST'])
+@app.route('/products/add', methods=['POST'])
 @login_required
 def add_product():
     admin_id = get_admin_id()
-    
-    if request.method == 'POST':
-        data = request.form
-        conn = get_db_connection(get_admin_db())
-        cursor = conn.cursor()
-        
-        try:
-            cursor.execute("""
-                INSERT INTO products (admin_id, sku, product_name, description, category, unit_price, 
-                                    stock_quantity, reorder_level, max_stock_level, supplier_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                admin_id,
-                data.get('sku'),
-                data.get('product_name'),
-                data.get('description'),
-                data.get('category'),
-                data.get('unit_price'),
-                data.get('stock_quantity'),
-                data.get('reorder_level'),
-                data.get('max_stock_level'),
-                data.get('supplier_id') if data.get('supplier_id') else None
-            ))
-            
-            product_id = cursor.lastrowid
-            
-            # Record transaction
-            cursor.execute("""
-                INSERT INTO transactions (admin_id, product_id, transaction_type, quantity, notes)
-                VALUES (%s, %s, 'ADD', %s, 'Initial stock added')
-            """, (admin_id, product_id, data.get('stock_quantity')))
-            
-            conn.commit()
-            flash('Product added successfully!', 'success')
-            return redirect(url_for('products'))
-        except Error as e:
-            conn.rollback()
-            flash(f'Error adding product: {str(e)}', 'error')
-        finally:
-            cursor.close()
-            conn.close()
-    
-    # Get suppliers for dropdown
+    data = request.form
     conn = get_db_connection(get_admin_db())
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, supplier_name FROM suppliers WHERE admin_id = %s ORDER BY supplier_name", (admin_id,))
-    suppliers = cursor.fetchall()
-    cursor.close()
-    conn.close()
+    cursor = conn.cursor()
     
-    return render_template('product_form.html', product=None, suppliers=suppliers)
+    try:
+        cursor.execute("""
+            INSERT INTO products (admin_id, sku, product_name, description, category, unit_price, 
+                                stock_quantity, reorder_level, max_stock_level, supplier_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            admin_id,
+            data.get('sku'),
+            data.get('product_name'),
+            data.get('description'),
+            data.get('category'),
+            data.get('unit_price'),
+            data.get('stock_quantity'),
+            data.get('reorder_level'),
+            data.get('max_stock_level'),
+            data.get('supplier_id') if data.get('supplier_id') else None
+        ))
+        
+        product_id = cursor.lastrowid
+        
+        # Record transaction
+        cursor.execute("""
+            INSERT INTO transactions (admin_id, product_id, transaction_type, quantity, notes)
+            VALUES (%s, %s, 'ADD', %s, 'Initial stock added')
+        """, (admin_id, product_id, data.get('stock_quantity')))
+        
+        conn.commit()
+        flash('Product added successfully!', 'success')
+    except Error as e:
+        conn.rollback()
+        flash(f'Error adding product: {str(e)}', 'error')
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return redirect(url_for('products'))
 
-@app.route('/products/edit/<int:id>', methods=['GET', 'POST'])
+@app.route('/products/edit/<int:id>', methods=['POST'])
 @login_required
 def edit_product(id):
     conn = get_db_connection(get_admin_db())
     cursor = conn.cursor(dictionary=True)
     admin_id = get_admin_id()
+    data = request.form
     
-    if request.method == 'POST':
-        data = request.form
+    try:
+        cursor.execute("""
+            UPDATE products 
+            SET sku=%s, product_name=%s, description=%s, category=%s, unit_price=%s,
+                stock_quantity=%s, reorder_level=%s, max_stock_level=%s, supplier_id=%s
+            WHERE admin_id=%s AND id=%s
+        """, (
+            data.get('sku'),
+            data.get('product_name'),
+            data.get('description'),
+            data.get('category'),
+            data.get('unit_price'),
+            data.get('stock_quantity'),
+            data.get('reorder_level'),
+            data.get('max_stock_level'),
+            data.get('supplier_id') if data.get('supplier_id') else None,
+            admin_id,
+            id
+        ))
         
-        try:
-            cursor.execute("""
-                UPDATE products 
-                SET sku=%s, product_name=%s, description=%s, category=%s, unit_price=%s,
-                    stock_quantity=%s, reorder_level=%s, max_stock_level=%s, supplier_id=%s
-                WHERE admin_id=%s AND id=%s
-            """, (
-                data.get('sku'),
-                data.get('product_name'),
-                data.get('description'),
-                data.get('category'),
-                data.get('unit_price'),
-                data.get('stock_quantity'),
-                data.get('reorder_level'),
-                data.get('max_stock_level'),
-                data.get('supplier_id') if data.get('supplier_id') else None,
-                admin_id,
-                id
-            ))
-            
-            # Record transaction
-            cursor.execute("""
-                INSERT INTO transactions (admin_id, product_id, transaction_type, quantity, notes)
-                VALUES (%s, %s, 'UPDATE', 0, 'Product information updated')
-            """, (admin_id, id))
-            
-            conn.commit()
-            flash('Product updated successfully!', 'success')
-            return redirect(url_for('products'))
-        except Error as e:
-            conn.rollback()
-            flash(f'Error updating product: {str(e)}', 'error')
+        # Record transaction
+        cursor.execute("""
+            INSERT INTO transactions (admin_id, product_id, transaction_type, quantity, notes)
+            VALUES (%s, %s, 'UPDATE', 0, 'Product information updated')
+        """, (admin_id, id))
+        
+        conn.commit()
+        flash('Product updated successfully!', 'success')
+    except Error as e:
+        conn.rollback()
+        flash(f'Error updating product: {str(e)}', 'error')
+    finally:
+        cursor.close()
+        conn.close()
     
-    cursor.execute("SELECT * FROM products WHERE admin_id = %s AND id = %s", (admin_id, id))
-    product = cursor.fetchone()
-    
-    cursor.execute("SELECT id, supplier_name FROM suppliers WHERE admin_id = %s ORDER BY supplier_name", (admin_id,))
-    suppliers = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return render_template('product_form.html', product=product, suppliers=suppliers)
+    return redirect(url_for('products'))
 
 @app.route('/products/delete/<int:id>', methods=['POST'])
 @login_required
@@ -554,66 +543,63 @@ def suppliers():
     
     return render_template('suppliers.html', suppliers=suppliers_list)
 
-@app.route('/suppliers/add', methods=['GET', 'POST'])
+@app.route('/suppliers/add', methods=['POST'])
 @login_required
 def add_supplier():
     admin_id = get_admin_id()
+    data = request.form
     
-    if request.method == 'POST':
-        data = request.form
-        
-        # Validate supplier name
-        valid, msg = validate_name(data.get('supplier_name'), "Supplier name")
-        if not valid:
-            flash(msg, 'error')
-            return render_template('supplier_form.html', supplier=None)
-        
-        # Validate contact person
-        valid, msg = validate_contact_person(data.get('contact_person'))
-        if not valid:
-            flash(msg, 'error')
-            return render_template('supplier_form.html', supplier=None)
-        
-        # Validate email
-        valid, msg = validate_email(data.get('email'))
-        if not valid:
-            flash(msg, 'error')
-            return render_template('supplier_form.html', supplier=None)
-        
-        # Validate phone
-        valid, msg = validate_phone(data.get('phone'))
-        if not valid:
-            flash(msg, 'error')
-            return render_template('supplier_form.html', supplier=None)
-        
-        conn = get_db_connection(get_admin_db())
-        cursor = conn.cursor()
-        
-        try:
-            cursor.execute("""
-                INSERT INTO suppliers (admin_id, supplier_name, contact_person, email, phone, address, city, country)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                admin_id,
-                data.get('supplier_name'),
-                data.get('contact_person'),
-                data.get('email'),
-                data.get('phone'),
-                data.get('address'),
-                data.get('city'),
-                data.get('country')
-            ))
-            conn.commit()
-            flash('Supplier added successfully!', 'success')
-            return redirect(url_for('suppliers'))
-        except Error as e:
-            conn.rollback()
-            flash(f'Error adding supplier: {str(e)}', 'error')
-        finally:
-            cursor.close()
-            conn.close()
+    # Validate supplier name
+    valid, msg = validate_name(data.get('supplier_name'), "Supplier name")
+    if not valid:
+        flash(msg, 'error')
+        return redirect(url_for('suppliers'))
     
-    return render_template('supplier_form.html', supplier=None)
+    # Validate contact person
+    valid, msg = validate_contact_person(data.get('contact_person'))
+    if not valid:
+        flash(msg, 'error')
+        return redirect(url_for('suppliers'))
+    
+    # Validate email
+    valid, msg = validate_email(data.get('email'))
+    if not valid:
+        flash(msg, 'error')
+        return redirect(url_for('suppliers'))
+    
+    # Validate phone
+    valid, msg = validate_phone(data.get('phone'))
+    if not valid:
+        flash(msg, 'error')
+        return redirect(url_for('suppliers'))
+    
+    conn = get_db_connection(get_admin_db())
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("""
+            INSERT INTO suppliers (admin_id, supplier_name, contact_person, email, phone, address, city, country)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            admin_id,
+            data.get('supplier_name'),
+            data.get('contact_person'),
+            data.get('email'),
+            data.get('phone'),
+            data.get('address'),
+            data.get('city'),
+            data.get('country')
+        ))
+        conn.commit()
+        flash('Supplier added successfully!', 'success')
+    except Error as e:
+        conn.rollback()
+        flash(f'Error adding supplier: {str(e)}', 'error')
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return redirect(url_for('suppliers'))
 
 @app.route('/sales/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -726,88 +712,73 @@ def edit_sale(id):
     conn.close()
     return render_template('edit_sale.html', sale=sale, items=items, buyers=buyers_list, products=products_list)
 
-@app.route('/suppliers/edit/<int:id>', methods=['GET', 'POST'])
+@app.route('/suppliers/edit/<int:id>', methods=['POST'])
 @login_required
 def edit_supplier(id):
     conn = get_db_connection(get_admin_db())
     cursor = conn.cursor(dictionary=True)
     admin_id = get_admin_id()
+    data = request.form
     
-    # Fetch supplier data once
-    cursor.execute("SELECT * FROM suppliers WHERE admin_id = %s AND id = %s", (admin_id, id))
-    supplier = cursor.fetchone()
-    
-    if not supplier:
+    # Validate supplier name
+    valid, msg = validate_name(data.get('supplier_name'), "Supplier name")
+    if not valid:
+        flash(msg, 'error')
         cursor.close()
         conn.close()
-        flash('Supplier not found', 'error')
         return redirect(url_for('suppliers'))
     
-    if request.method == 'POST':
-        data = request.form
-        
-        # Validate supplier name
-        valid, msg = validate_name(data.get('supplier_name'), "Supplier name")
-        if not valid:
-            flash(msg, 'error')
-            cursor.close()
-            conn.close()
-            return render_template('supplier_form.html', supplier=supplier)
-        
-        # Validate contact person
-        valid, msg = validate_contact_person(data.get('contact_person'))
-        if not valid:
-            flash(msg, 'error')
-            cursor.close()
-            conn.close()
-            return render_template('supplier_form.html', supplier=supplier)
-        
-        # Validate email
-        valid, msg = validate_email(data.get('email'))
-        if not valid:
-            flash(msg, 'error')
-            cursor.close()
-            conn.close()
-            return render_template('supplier_form.html', supplier=supplier)
-        
-        # Validate phone
-        valid, msg = validate_phone(data.get('phone'))
-        if not valid:
-            flash(msg, 'error')
-            cursor.close()
-            conn.close()
-            return render_template('supplier_form.html', supplier=supplier)
-        
-        try:
-            cursor.execute("""
-                UPDATE suppliers 
-                SET supplier_name=%s, contact_person=%s, email=%s, phone=%s, 
-                    address=%s, city=%s, country=%s
-                WHERE admin_id=%s AND id=%s
-            """, (
-                data.get('supplier_name'),
-                data.get('contact_person'),
-                data.get('email'),
-                data.get('phone'),
-                data.get('address'),
-                data.get('city'),
-                data.get('country'),
-                admin_id,
-                id
-            ))
-            conn.commit()
-            flash('Supplier updated successfully!', 'success')
-            cursor.close()
-            conn.close()
-            return redirect(url_for('suppliers'))
-        except Error as e:
-            conn.rollback()
-            flash(f'Error updating supplier: {str(e)}', 'error')
+    # Validate contact person
+    valid, msg = validate_contact_person(data.get('contact_person'))
+    if not valid:
+        flash(msg, 'error')
+        cursor.close()
+        conn.close()
+        return redirect(url_for('suppliers'))
     
-    cursor.close()
-    conn.close()
+    # Validate email
+    valid, msg = validate_email(data.get('email'))
+    if not valid:
+        flash(msg, 'error')
+        cursor.close()
+        conn.close()
+        return redirect(url_for('suppliers'))
     
-    return render_template('supplier_form.html', supplier=supplier)
+    # Validate phone
+    valid, msg = validate_phone(data.get('phone'))
+    if not valid:
+        flash(msg, 'error')
+        cursor.close()
+        conn.close()
+        return redirect(url_for('suppliers'))
+    
+    try:
+        cursor.execute("""
+            UPDATE suppliers 
+            SET supplier_name=%s, contact_person=%s, email=%s, phone=%s, 
+                address=%s, city=%s, country=%s
+            WHERE admin_id=%s AND id=%s
+        """, (
+            data.get('supplier_name'),
+            data.get('contact_person'),
+            data.get('email'),
+            data.get('phone'),
+            data.get('address'),
+            data.get('city'),
+            data.get('country'),
+            admin_id,
+            id
+        ))
+        conn.commit()
+        flash('Supplier updated successfully!', 'success')
+    except Error as e:
+        conn.rollback()
+        flash(f'Error updating supplier: {str(e)}', 'error')
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return redirect(url_for('suppliers'))
 
 @app.route('/sales/delete/<int:id>', methods=['POST'])
 @login_required
@@ -904,153 +875,135 @@ def buyers():
     
     return render_template('buyers.html', buyers=buyers_list)
 
-@app.route('/buyers/add', methods=['GET', 'POST'])
+@app.route('/buyers/add', methods=['POST'])
 @login_required
 def add_buyer():
     admin_id = get_admin_id()
+    data = request.form
     
-    if request.method == 'POST':
-        data = request.form
-        
-        # Validate buyer name
-        valid, msg = validate_name(data.get('buyer_name'), "Buyer name")
+    # Validate buyer name
+    valid, msg = validate_name(data.get('buyer_name'), "Buyer name")
+    if not valid:
+        flash(msg, 'error')
+        return redirect(url_for('buyers'))
+    
+    # Validate contact person
+    valid, msg = validate_contact_person(data.get('contact_person'))
+    if not valid:
+        flash(msg, 'error')
+        return redirect(url_for('buyers'))
+    
+    # Validate email (if provided)
+    if data.get('email'):
+        valid, msg = validate_email(data.get('email'))
         if not valid:
             flash(msg, 'error')
-            return render_template('buyer_form.html', buyer=None)
-        
-        # Validate contact person
-        valid, msg = validate_contact_person(data.get('contact_person'))
-        if not valid:
-            flash(msg, 'error')
-            return render_template('buyer_form.html', buyer=None)
-        
-        # Validate email (if provided)
-        if data.get('email'):
-            valid, msg = validate_email(data.get('email'))
-            if not valid:
-                flash(msg, 'error')
-                return render_template('buyer_form.html', buyer=None)
-        
-        # Validate phone (if provided)
-        if data.get('phone'):
-            valid, msg = validate_phone(data.get('phone'))
-            if not valid:
-                flash(msg, 'error')
-                return render_template('buyer_form.html', buyer=None)
-        
-        conn = get_db_connection(get_admin_db())
-        cursor = conn.cursor()
-        
-        try:
-            cursor.execute("""
-                INSERT INTO buyers (admin_id, buyer_name, contact_person, email, phone, address, city, country)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                admin_id,
-                data.get('buyer_name'),
-                data.get('contact_person'),
-                data.get('email'),
-                data.get('phone'),
-                data.get('address'),
-                data.get('city'),
-                data.get('country')
-            ))
-            conn.commit()
-            flash('Buyer added successfully!', 'success')
             return redirect(url_for('buyers'))
-        except Error as e:
-            conn.rollback()
-            flash(f'Error adding buyer: {str(e)}', 'error')
-        finally:
-            cursor.close()
-            conn.close()
     
-    return render_template('buyer_form.html', buyer=None)
+    # Validate phone (if provided)
+    if data.get('phone'):
+        valid, msg = validate_phone(data.get('phone'))
+        if not valid:
+            flash(msg, 'error')
+            return redirect(url_for('buyers'))
+    
+    conn = get_db_connection(get_admin_db())
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("""
+            INSERT INTO buyers (admin_id, buyer_name, contact_person, email, phone, address, city, country)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            admin_id,
+            data.get('buyer_name'),
+            data.get('contact_person'),
+            data.get('email'),
+            data.get('phone'),
+            data.get('address'),
+            data.get('city'),
+            data.get('country')
+        ))
+        conn.commit()
+        flash('Buyer added successfully!', 'success')
+    except Error as e:
+        conn.rollback()
+        flash(f'Error adding buyer: {str(e)}', 'error')
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return redirect(url_for('buyers'))
 
-@app.route('/buyers/edit/<int:id>', methods=['GET', 'POST'])
+@app.route('/buyers/edit/<int:id>', methods=['POST'])
 @login_required
 def edit_buyer(id):
     conn = get_db_connection(get_admin_db())
     cursor = conn.cursor(dictionary=True)
     admin_id = get_admin_id()
+    data = request.form
     
-    # Fetch buyer data once
-    cursor.execute("SELECT * FROM buyers WHERE admin_id = %s AND id = %s", (admin_id, id))
-    buyer = cursor.fetchone()
-    
-    if not buyer:
+    # Validate buyer name
+    valid, msg = validate_name(data.get('buyer_name'), "Buyer name")
+    if not valid:
+        flash(msg, 'error')
         cursor.close()
         conn.close()
-        flash('Buyer not found', 'error')
         return redirect(url_for('buyers'))
     
-    if request.method == 'POST':
-        data = request.form
-        
-        # Validate buyer name
-        valid, msg = validate_name(data.get('buyer_name'), "Buyer name")
+    # Validate contact person
+    valid, msg = validate_contact_person(data.get('contact_person'))
+    if not valid:
+        flash(msg, 'error')
+        cursor.close()
+        conn.close()
+        return redirect(url_for('buyers'))
+    
+    # Validate email (if provided)
+    if data.get('email'):
+        valid, msg = validate_email(data.get('email'))
         if not valid:
             flash(msg, 'error')
-            cursor.close()
-            conn.close()
-            return render_template('buyer_form.html', buyer=buyer)
-        
-        # Validate contact person
-        valid, msg = validate_contact_person(data.get('contact_person'))
-        if not valid:
-            flash(msg, 'error')
-            cursor.close()
-            conn.close()
-            return render_template('buyer_form.html', buyer=buyer)
-        
-        # Validate email (if provided)
-        if data.get('email'):
-            valid, msg = validate_email(data.get('email'))
-            if not valid:
-                flash(msg, 'error')
-                cursor.close()
-                conn.close()
-                return render_template('buyer_form.html', buyer=buyer)
-        
-        # Validate phone (if provided)
-        if data.get('phone'):
-            valid, msg = validate_phone(data.get('phone'))
-            if not valid:
-                flash(msg, 'error')
-                cursor.close()
-                conn.close()
-                return render_template('buyer_form.html', buyer=buyer)
-        
-        try:
-            cursor.execute("""
-                UPDATE buyers 
-                SET buyer_name=%s, contact_person=%s, email=%s, phone=%s, 
-                    address=%s, city=%s, country=%s
-                WHERE admin_id=%s AND id=%s
-            """, (
-                data.get('buyer_name'),
-                data.get('contact_person'),
-                data.get('email'),
-                data.get('phone'),
-                data.get('address'),
-                data.get('city'),
-                data.get('country'),
-                admin_id,
-                id
-            ))
-            conn.commit()
-            flash('Buyer updated successfully!', 'success')
             cursor.close()
             conn.close()
             return redirect(url_for('buyers'))
-        except Error as e:
-            conn.rollback()
-            flash(f'Error updating buyer: {str(e)}', 'error')
     
-    cursor.close()
-    conn.close()
+    # Validate phone (if provided)
+    if data.get('phone'):
+        valid, msg = validate_phone(data.get('phone'))
+        if not valid:
+            flash(msg, 'error')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('buyers'))
     
-    return render_template('buyer_form.html', buyer=buyer)
+    try:
+        cursor.execute("""
+            UPDATE buyers 
+            SET buyer_name=%s, contact_person=%s, email=%s, phone=%s, 
+                address=%s, city=%s, country=%s
+            WHERE admin_id=%s AND id=%s
+        """, (
+            data.get('buyer_name'),
+            data.get('contact_person'),
+            data.get('email'),
+            data.get('phone'),
+            data.get('address'),
+            data.get('city'),
+            data.get('country'),
+            admin_id,
+            id
+        ))
+        conn.commit()
+        flash('Buyer updated successfully!', 'success')
+    except Error as e:
+        conn.rollback()
+        flash(f'Error updating buyer: {str(e)}', 'error')
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return redirect(url_for('buyers'))
 
 @app.route('/buyers/delete/<int:id>', methods=['POST'])
 @login_required
@@ -1586,4 +1539,4 @@ def change_password():
 
 if __name__ == '__main__':
     # Set debug=False in production
-    app.run(debug=False, host='127.0.0.1', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)
