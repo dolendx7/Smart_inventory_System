@@ -36,9 +36,23 @@
                 <label class="form-label">Sale Date</label>
                 <p>{{ sale.sale_date.strftime('%B %d, %Y') if sale.sale_date else 'N/A' }}</p>
             </div>
+        </div>
+        <div class="form-row">
             <div class="form-group">
-                <label class="form-label">Processed By</label>
-                <p>{{ sale.username if sale.username else 'N/A' }}</p>
+                <label class="form-label">Payment Method</label>
+                <p><strong>{{ sale.payment_method if sale.payment_method else 'Cash' }}</strong></p>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Payment Status</label>
+                <p>
+                    {% if sale.payment_status == 'Paid' %}
+                        <span class="badge badge-success">{{ sale.payment_status }}</span>
+                    {% elif sale.payment_status == 'Partial' %}
+                        <span class="badge badge-warning">{{ sale.payment_status }}</span>
+                    {% else %}
+                        <span class="badge badge-danger">{{ sale.payment_status if sale.payment_status else 'Unpaid' }}</span>
+                    {% endif %}
+                </p>
             </div>
         </div>
     </div>
@@ -94,15 +108,15 @@
                         <td>{{ item.sku }}</td>
                         <td>{{ item.product_name }}</td>
                         <td>{{ item.quantity }}</td>
-                        <td>${{ "%.2f"|format(item.unit_price) }}</td>
-                        <td>${{ "%.2f"|format(item.subtotal) }}</td>
+                        <td>₹{{ "%.2f"|format(item.unit_price) }}</td>
+                        <td>₹{{ "%.2f"|format(item.subtotal) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
                     <tr>
                         <td colspan="4" class="text-right"><strong>Total Amount:</strong></td>
-                        <td><strong>${{ "%.2f"|format(sale.total_amount) }}</strong></td>
+                        <td><strong>₹{{ "%.2f"|format(sale.total_amount) }}</strong></td>
                     </tr>
                 </tfoot>
             </table>

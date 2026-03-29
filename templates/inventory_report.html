@@ -37,7 +37,7 @@
             <i class="fas fa-dollar-sign"></i>
         </div>
         <div class="stat-details">
-            <h3>${{ "%.2f"|format(summary.total_value) if summary.total_value else "0.00" }}</h3>
+            <h3>₹{{ "%.2f"|format(summary.total_value) if summary.total_value else "0.00" }}</h3>
             <p>Total Inventory Value</p>
         </div>
     </div>
@@ -112,7 +112,7 @@
             <span style="font-size: 0.875rem; font-weight: normal; color: var(--text-secondary); margin-left: 1rem;">
                 {{ items|length }} products | 
                 {{ items|sum(attribute='stock_quantity') }} items | 
-                ${{ "%.2f"|format(items|sum(attribute='stock_value')) }}
+                ₹{{ "%.2f"|format(items|sum(attribute='stock_value')) }}
             </span>
         </h2>
     </div>
@@ -137,7 +137,7 @@
                         <td><code>{{ product.sku }}</code></td>
                         <td><strong>{{ product.product_name }}</strong></td>
                         <td>{{ product.supplier_name if product.supplier_name else 'N/A' }}</td>
-                        <td>${{ "%.2f"|format(product.unit_price) }}</td>
+                        <td>₹{{ "%.2f"|format(product.unit_price) }}</td>
                         <td>
                             <strong>{{ product.stock_quantity }}</strong>
                             {% if product.stock_quantity <= product.reorder_level %}
@@ -145,7 +145,7 @@
                             {% endif %}
                         </td>
                         <td>{{ product.reorder_level }}</td>
-                        <td><strong>${{ "%.2f"|format(product.stock_value) }}</strong></td>
+                        <td><strong>₹{{ "%.2f"|format(product.stock_value) }}</strong></td>
                         <td>
                             {% if product.stock_status == 'Out of Stock' %}
                                 <span class="badge badge-danger">{{ product.stock_status }}</span>
@@ -163,7 +163,7 @@
                         <td colspan="4" style="text-align: right;">Category Total:</td>
                         <td>{{ items|sum(attribute='stock_quantity') }}</td>
                         <td>-</td>
-                        <td>${{ "%.2f"|format(items|sum(attribute='stock_value')) }}</td>
+                        <td>₹{{ "%.2f"|format(items|sum(attribute='stock_value')) }}</td>
                         <td>-</td>
                     </tr>
                 </tfoot>

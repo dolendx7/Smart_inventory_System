@@ -15,6 +15,7 @@
                     <th>Category</th>
                     <th>Current Stock</th>
                     <th>Reorder Level</th>
+                    <th>Status</th>
                     <th>Supplier</th>
                     <th>Contact</th>
                 </tr>
@@ -25,8 +26,21 @@
                     <td>{{ alert.product_name }}</td>
                     <td>{{ alert.sku }}</td>
                     <td>{{ alert.category }}</td>
-                    <td><span class="badge badge-danger">{{ alert.stock_quantity }}</span></td>
+                    <td>
+                        {% if alert.stock_quantity == 0 %}
+                            <span class="badge badge-danger">{{ alert.stock_quantity }}</span>
+                        {% else %}
+                            <span class="badge badge-warning">{{ alert.stock_quantity }}</span>
+                        {% endif %}
+                    </td>
                     <td>{{ alert.reorder_level }}</td>
+                    <td>
+                        {% if alert.stock_quantity == 0 %}
+                            <span class="badge badge-danger">Out of Stock</span>
+                        {% else %}
+                            <span class="badge badge-warning">Low Stock</span>
+                        {% endif %}
+                    </td>
                     <td>{{ alert.supplier_name or 'N/A' }}</td>
                     <td>{{ alert.supplier_email or 'N/A' }}</td>
                 </tr>

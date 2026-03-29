@@ -41,6 +41,20 @@
                 </div>
             </div>
 
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="payment_method" class="form-label">Payment Method *</label>
+                    <select name="payment_method" id="payment_method" class="form-control" required>
+                        <option value="Cash" {% if sale.payment_method == 'Cash' %}selected{% endif %}>Cash</option>
+                        <option value="Credit Card" {% if sale.payment_method == 'Credit Card' %}selected{% endif %}>Credit Card</option>
+                        <option value="Debit Card" {% if sale.payment_method == 'Debit Card' %}selected{% endif %}>Debit Card</option>
+                        <option value="UPI" {% if sale.payment_method == 'UPI' %}selected{% endif %}>UPI</option>
+                        <option value="Bank Transfer" {% if sale.payment_method == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+                        <option value="Cheque" {% if sale.payment_method == 'Cheque' %}selected{% endif %}>Cheque</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="notes" class="form-label">Notes</label>
                 <textarea name="notes" id="notes" class="form-control" rows="3">{{ sale.notes if sale.notes else '' }}</textarea>
@@ -73,9 +87,9 @@
                                     {% endfor %}
                                 </select>
                             </td>
-                            <td class="unit-price">${{ "%.2f"|format(item.unit_price) }}</td>
+                            <td class="unit-price">₹{{ "%.2f"|format(item.unit_price) }}</td>
                             <td><input type="number" class="quantity form-control" value="{{ item.quantity }}" min="1" required></td>
-                            <td class="subtotal">${{ "%.2f"|format(item.subtotal) }}</td>
+                            <td class="subtotal">₹{{ "%.2f"|format(item.subtotal) }}</td>
                             <td>
                                 <button type="button" class="btn btn-danger btn-sm remove-item">
                                     <i class="fas fa-trash"></i>
@@ -92,7 +106,7 @@
             </button>
 
             <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                <h3 style="margin: 0;">Total: $<span id="total-amount">{{ "%.2f"|format(sale.total_amount) }}</span></h3>
+                <h3 style="margin: 0;">Total: ₹<span id="total-amount">{{ "%.2f"|format(sale.total_amount) }}</span></h3>
             </div>
 
             <div style="display: flex; gap: 1rem;">
@@ -113,15 +127,15 @@ $(document).ready(function(){
         var qty = parseInt(row.find('.quantity').val());
         if (isNaN(qty) || qty < 1) qty = 1;
         var subtotal = price * qty;
-        row.find('.unit-price').text('$' + price.toFixed(2));
-        row.find('.subtotal').text('$' + subtotal.toFixed(2));
+        row.find('.unit-price').text('₹' + price.toFixed(2));
+        row.find('.subtotal').text('₹' + subtotal.toFixed(2));
         recalcTotal();
     }
 
     function recalcTotal(){
         var total = 0;
         $('#items-table tbody tr').each(function(){
-            var subtotalText = $(this).find('.subtotal').text().replace('$', '');
+            var subtotalText = $(this).find('.subtotal').text().replace('₹', '');
             total += parseFloat(subtotalText);
         });
         $('#total-amount').text(total.toFixed(2));
@@ -152,9 +166,9 @@ $(document).ready(function(){
                     {% endfor %}
                 </select>
             </td>
-            <td class="unit-price">$0.00</td>
+            <td class="unit-price">₹0.00</td>
             <td><input type="number" class="quantity form-control" value="1" min="1" required></td>
-            <td class="subtotal">$0.00</td>
+            <td class="subtotal">₹0.00</td>
             <td>
                 <button type="button" class="btn btn-danger btn-sm remove-item">
                     <i class="fas fa-trash"></i>
@@ -182,7 +196,7 @@ $(document).ready(function(){
             var productId = $(this).find('.product-select').val();
             var quantity = parseInt($(this).find('.quantity').val());
             var unitPrice = parseFloat($(this).find('.product-select option:selected').data('price'));
-            var subtotalText = $(this).find('.subtotal').text().replace('$', '');
+            var subtotalText = $(this).find('.subtotal').text().replace('₹', '');
             var subtotal = parseFloat(subtotalText);
             
             if (!productId || isNaN(quantity) || quantity < 1) {

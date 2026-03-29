@@ -39,6 +39,20 @@
                 </div>
             </div>
 
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="payment_method" class="form-label">Payment Method *</label>
+                    <select name="payment_method" id="payment_method" class="form-control" required>
+                        <option value="Cash" selected>Cash</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Debit Card">Debit Card</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cheque">Cheque</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="notes" class="form-label">Notes</label>
                 <textarea name="notes" id="notes" class="form-control" rows="3" placeholder="Add any additional notes about this sale..."></textarea>
@@ -70,7 +84,7 @@
             <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3 style="margin: 0;">Total Amount:</h3>
-                    <h2 style="margin: 0; color: var(--primary);">$<span id="total-amount">0.00</span></h2>
+                    <h2 style="margin: 0; color: var(--primary);">₹<span id="total-amount">0.00</span></h2>
                 </div>
             </div>
 
@@ -107,11 +121,11 @@ $(document).ready(function(){
                     {% endfor %}
                 </select>
             </td>
-            <td class="unit-price" style="vertical-align: middle; font-weight: 600;">$0.00</td>
+            <td class="unit-price" style="vertical-align: middle; font-weight: 600;">₹0.00</td>
             <td>
                 <input type="number" class="quantity form-control" value="1" min="1" required>
             </td>
-            <td class="subtotal" style="vertical-align: middle; font-weight: 600;">$0.00</td>
+            <td class="subtotal" style="vertical-align: middle; font-weight: 600;">₹0.00</td>
             <td>
                 <button type="button" class="btn btn-danger btn-sm remove-item">
                     <i class="fas fa-trash"></i>
@@ -134,8 +148,8 @@ $(document).ready(function(){
         }
         
         var subtotal = price * qty;
-        row.find('.unit-price').text('$' + price.toFixed(2));
-        row.find('.subtotal').text('$' + subtotal.toFixed(2));
+        row.find('.unit-price').text('₹' + price.toFixed(2));
+        row.find('.subtotal').text('₹' + subtotal.toFixed(2));
         recalcTotal();
     }
 
@@ -143,7 +157,7 @@ $(document).ready(function(){
     function recalcTotal(){
         var total = 0;
         $('#items-table tbody tr').each(function(){
-            var subtotalText = $(this).find('.subtotal').text().replace('$', '');
+            var subtotalText = $(this).find('.subtotal').text().replace('₹', '');
             total += parseFloat(subtotalText) || 0;
         });
         $('#total-amount').text(total.toFixed(2));
@@ -194,7 +208,7 @@ $(document).ready(function(){
             var productId = $(this).find('.product-select').val();
             var quantity = parseInt($(this).find('.quantity').val());
             var unitPrice = parseFloat($(this).find('.product-select option:selected').data('price'));
-            var subtotalText = $(this).find('.subtotal').text().replace('$', '');
+            var subtotalText = $(this).find('.subtotal').text().replace('₹', '');
             var subtotal = parseFloat(subtotalText);
 
             if (!productId) {

@@ -31,6 +31,7 @@
                         <th>Buyer</th>
                         <th>Sale Date</th>
                         <th>Total Amount</th>
+                        <th>Payment Method</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -42,7 +43,9 @@
                             <td>{{ sale.order_number }}</td>
                             <td>{{ sale.buyer_name if sale.buyer_name else 'N/A' }}</td>
                             <td>{{ sale.sale_date.strftime('%Y-%m-%d') if sale.sale_date else 'N/A' }}</td>
-                            <td>${{ "%.2f"|format(sale.total_amount) }}</td>
+                            <td>₹{{ "%.2f"|format(sale.total_amount) }}</td>
+                            <td>{{ sale.payment_method if sale.payment_method else 'Cash' }}</td>
+                         
                             <td>
                                 {% if sale.status == 'Completed' %}
                                     <span class="badge badge-success">Completed</span>
@@ -69,7 +72,7 @@
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="6" class="text-center">No sales found</td>
+                            <td colspan="8" class="text-center">No sales found</td>
                         </tr>
                     {% endif %}
                 </tbody>

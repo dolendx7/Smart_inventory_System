@@ -28,7 +28,16 @@
         </div>
         <div class="stat-content">
             <h3>{{ low_stock }}</h3>
-            <p>Low Stock Alerts</p>
+            <p>Low Stock</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon danger">
+            <i class="fas fa-times-circle"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ out_of_stock }}</h3>
+            <p>Out of Stock</p>
         </div>
     </div>
     <div class="stat-card">
@@ -36,7 +45,7 @@
             <i class="fas fa-dollar-sign"></i>
         </div>
         <div class="stat-content">
-            <h3>${{ "%.2f"|format(total_revenue) }}</h3>
+            <h3>₹{{ "%.2f"|format(total_revenue) }}</h3>
             <p>Total Revenue (YTD)</p>
         </div>
     </div>
@@ -45,7 +54,7 @@
             <i class="fas fa-warehouse"></i>
         </div>
         <div class="stat-content">
-            <h3>${{ "%.2f"|format(inventory_value) }}</h3>
+            <h3>₹{{ "%.2f"|format(inventory_value) }}</h3>
             <p>Inventory Value</p>
         </div>
     </div>
@@ -135,7 +144,6 @@
                             <th>Product</th>
                             <th>Type</th>
                             <th>Quantity</th>
-                            <th>User</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -155,7 +163,6 @@
                                 {% endif %}
                             </td>
                             <td>{{ activity.quantity }}</td>
-                            <td>{{ activity.username }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -172,7 +179,7 @@
         <div class="card-body">
             {% if alerts %}
                 {% for alert in alerts %}
-                <div style="padding: 0.75rem; background: {% if alert.stock_quantity == 0 %}#fee2e2{% else %}#fef3c7{% endif %}; border-left: 4px solid {% if alert.stock_quantity == 0 %}var(--danger){% else %}var(--warning){% endif %}; border-radius: 0.5rem; margin-bottom: 0.75rem;">
+                <div style="padding: 0.75rem; background: {% if alert.stock_quantity == 0 %}#fecaca{% else %}#fed7aa{% endif %}; border-left: 4px solid {% if alert.stock_quantity == 0 %}var(--danger){% else %}var(--warning){% endif %}; border-radius: 0.5rem; margin-bottom: 0.75rem;">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
                             <strong style="color: #1f2937;">{{ alert.product_name }}</strong>
@@ -219,7 +226,7 @@ const monthlySalesData = {
         {% endfor %}
     ],
     datasets: [{
-        label: 'Revenue ($)',
+        label: 'Revenue (₹)',
         data: [
             {% for sale in monthly_sales %}
                 {{ sale.revenue if sale.revenue else 0 }},
@@ -248,7 +255,7 @@ new Chart(monthlySalesCtx, {
             tooltip: {
                 callbacks: {
                     label: function(context) {
-                        return 'Revenue: $' + context.parsed.y.toFixed(2);
+                        return 'Revenue: ₹' + context.parsed.y.toFixed(2);
                     }
                 }
             }
@@ -258,7 +265,7 @@ new Chart(monthlySalesCtx, {
                 beginAtZero: true,
                 ticks: {
                     callback: function(value) {
-                        return '$' + value.toLocaleString();
+                        return '₹' + value.toLocaleString();
                     }
                 }
             }
@@ -371,7 +378,8 @@ new Chart(topProductsCtx, {
 const stockStatusCtx = document.getElementById('stockStatusChart').getContext('2d');
 const totalProducts = {{ total_products }};
 const lowStockCount = {{ low_stock }};
-const inStockCount = totalProducts - lowStockCount;
+const outOfStockCount = {{ out_of_stock }};
+const inStockCount = totalProducts - lowStockCount - outOfStockCount;
 
 const stockStatusData = {
     labels: ['In Stock', 'Low Stock', 'Out of Stock'],
@@ -379,12 +387,12 @@ const stockStatusData = {
         data: [
             inStockCount > 0 ? inStockCount : 0,
             lowStockCount > 0 ? lowStockCount : 0,
-            0  // You can add out of stock count if available
+            outOfStockCount > 0 ? outOfStockCount : 0
         ],
         backgroundColor: [
-            'rgba(34, 197, 94, 0.8)',
-            'rgba(251, 146, 60, 0.8)',
-            'rgba(239, 68, 68, 0.8)'
+            'rgba(16, 185, 129, 0.8)',   // Green for In Stock
+            'rgba(249, 115, 22, 0.8)',   // Orange for Low Stock
+            'rgba(220, 38, 38, 0.8)'     // Red for Out of Stock
         ],
         borderWidth: 2,
         borderColor: '#fff'

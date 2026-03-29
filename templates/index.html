@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvenLogic Pro - Smart Inventory Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#home">
+                <i class="fas fa-boxes"></i> InvenLogic Pro
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-login" href="{{ url_for('login') }}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-signup" href="{{ url_for('signup') }}">Sign Up</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 hero-content">
+                    <h1 class="hero-title">Manage Your Inventory with Confidence</h1>
+                    <p class="hero-subtitle">Complete inventory management solution for modern businesses. Track products, manage sales, and generate insights.</p>
+                    <div class="hero-buttons">
+                        <a href="{{ url_for('signup') }}" class="btn btn-primary btn-lg">Get Started Free</a>
+                        <a href="#features" class="btn btn-outline-light btn-lg">Learn More</a>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="hero-image">
+                        <div class="floating-card card-1">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Real-time Analytics</span>
+                        </div>
+                        <div class="floating-card card-2">
+                            <i class="fas fa-box"></i>
+                            <span>Stock Management</span>
+                        </div>
+                        <div class="floating-card card-3">
+                            <i class="fas fa-bell"></i>
+                            <span>Smart Alerts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Carousel Section -->
+    <section class="carousel-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>See InvenLogic Pro in Action</h2>
+                <p>Discover how our platform streamlines your inventory operations</p>
+            </div>
+            <div id="inventoryCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#inventoryCarousel" data-bs-slide-to="0" class="active"></button>
+                    <button type="button" data-bs-target="#inventoryCarousel" data-bs-slide-to="1"></button>
+                    <button type="button" data-bs-target="#inventoryCarousel" data-bs-slide-to="2"></button>
+                    <button type="button" data-bs-target="#inventoryCarousel" data-bs-slide-to="3"></button>
+                </div>
+                <div class="carousel-inner">
+                    <div class="carousel-item active">
+                        <div class="carousel-image-wrapper">
+                            <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?w=1200&h=600&fit=crop" class="d-block w-100" alt="Advanced Analytics Dashboard">
+                            <div class="carousel-overlay"></div>
+                        </div>
+                        <div class="carousel-caption">
+                            <h3><i class="fas fa-chart-line"></i> Advanced Analytics</h3>
+                            <p>Track your inventory performance with real-time analytics and visual insights</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="carousel-image-wrapper">
+                            <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&h=600&fit=crop" class="d-block w-100" alt="Warehouse Management">
+                            <div class="carousel-overlay"></div>
+                        </div>
+                        <div class="carousel-caption">
+                            <h3><i class="fas fa-warehouse"></i> Smart Warehouse Management</h3>
+                            <p>Organize and track your products efficiently across multiple locations</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="carousel-image-wrapper">
+                            <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=600&fit=crop" class="d-block w-100" alt="Business Reports">
+                            <div class="carousel-overlay"></div>
+                        </div>
+                        <div class="carousel-caption">
+                            <h3><i class="fas fa-file-invoice-dollar"></i> Comprehensive Reports</h3>
+                            <p>Generate detailed financial and inventory reports with just one click</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="carousel-image-wrapper">
+                            <img src="https://images.unsplash.com/photo-1556155092-490a1ba16284?w=1200&h=600&fit=crop" class="d-block w-100" alt="Team Collaboration">
+                            <div class="carousel-overlay"></div>
+                        </div>
+                        <div class="carousel-caption">
+                            <h3><i class="fas fa-users-cog"></i> Team Collaboration</h3>
+                            <p>Manage suppliers, buyers, and team members all in one place</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#inventoryCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#inventoryCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Powerful Features</h2>
+                <p>Everything you need to manage your inventory efficiently</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <h3>Product Management</h3>
+                        <p>Track products with SKU, categories, stock levels, and automatic reorder alerts.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h3>Sales Tracking</h3>
+                        <p>Create multi-item orders, track sales history, and manage customer relationships.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h3>Advanced Reports</h3>
+                        <p>Generate inventory, sales, and financial reports with visual analytics.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <h3>Supplier Management</h3>
+                        <p>Maintain supplier database with contact information and product tracking.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3>Customer Database</h3>
+                        <p>Store buyer information and track order history for better relationships.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>Secure & Reliable</h3>
+                        <p>Password encryption, session management, and SQL injection protection.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <div class="about-image">
+                        <div class="stats-card">
+                            <div class="stat-item">
+                                <h3>50+</h3>
+                                <p>Features</p>
+                            </div>
+                            <div class="stat-item">
+                                <h3>100%</h3>
+                                <p>Secure</p>
+                            </div>
+                            <div class="stat-item">
+                                <h3>24/7</h3>
+                                <p>Access</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="about-content">
+                        <h2>About InvenLogic Pro</h2>
+                        <p>InvenLogic Pro is a comprehensive inventory management system designed for small to medium-sized businesses. Built with modern technologies and best practices, it provides everything you need to manage your inventory efficiently.</p>
+                        <div class="about-features">
+                            <div class="about-feature-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Real-time dashboard with visual metrics</span>
+                            </div>
+                            <div class="about-feature-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Automatic stock updates and alerts</span>
+                            </div>
+                            <div class="about-feature-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Comprehensive reporting and analytics</span>
+                            </div>
+                            <div class="about-feature-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Easy-to-use interface with modern design</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Transform Your Inventory Management?</h2>
+                <p>Join businesses that trust InvenLogic Pro for their inventory needs</p>
+                <div class="cta-buttons">
+                    <a href="{{ url_for('signup') }}" class="btn btn-light btn-lg">Create Free Account</a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">Sign In</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5><i class="fas fa-boxes"></i> InvenLogic Pro</h5>
+                    <p>Smart inventory management for modern businesses.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="{{ url_for('login') }}">Login</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact</h5>
+                    <p><i class="fas fa-envelope"></i> support@invenlogic.com</p>
+                    <p><i class="fas fa-phone"></i> +1 (555) 123-4567</p>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2026 InvenLogic Pro. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+</body>
+</html>

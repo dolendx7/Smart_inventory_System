@@ -196,35 +196,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Confirm delete actions
-function confirmDelete(message = 'Are you sure you want to delete this item?') {
-    return confirm(message);
-}
 
-// Mobile sidebar toggle
-const sidebar = document.getElementById('sidebar');
-const toggleBtn = document.getElementById('sidebar-toggle');
-
-if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('mobile-open');
-    });
-}
-
-// Form validation
-function validateForm(formId) {
-    const form = document.getElementById(formId);
-    const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-    
-    let isValid = true;
-    inputs.forEach(input => {
-        if (!input.value.trim()) {
-            input.style.borderColor = '#ef4444';
-            isValid = false;
-        } else {
-            input.style.borderColor = '#e2e8f0';
-        }
-    });
-    
-    return isValid;
-}

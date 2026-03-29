@@ -8,8 +8,7 @@ import os
 from functools import wraps
 
 app = Flask(__name__)
-# Use environment variable for secret key in production
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.secret_key = 'dev-secret-key-change-in-production'
 
 # ============= VALIDATION FUNCTIONS =============
 
@@ -62,11 +61,11 @@ def validate_contact_person(name):
         return True, ""  # Contact person is optional
     return validate_name(name, "Contact person name")
 
-# Database Configuration - Use environment variables in production
-DB_HOST = os.environ.get('DB_HOST', 'localhost')
-DB_USER = os.environ.get('DB_USER', 'root')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'dolen@123')
-MASTER_DB = os.environ.get('MASTER_DB', 'inventory_master')
+# Database Configuration
+DB_HOST = 'localhost'
+DB_USER = 'root'
+DB_PASSWORD = 'dolen@123'
+MASTER_DB = 'inventory_master'
 
 # Database Connection Helper
 def get_db_connection(database=None):
@@ -82,7 +81,7 @@ def get_db_connection(database=None):
         connection = mysql.connector.connect(**config)
         return connection
     except Error as e:
-        # Log error properly instead of print
+        print(f"Database connection error: {e}")
         return None
 
 def get_admin_db():
@@ -113,7 +112,7 @@ def hash_password(password):
 def index():
     if 'admin_id' in session:
         return redirect(url_for('dashboard'))
-    return redirect(url_for('login'))
+    return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -174,31 +173,43 @@ def signup():
             return render_template('signup.html')
         
         conn = get_db_connection(MASTER_DB)
-        if conn:
-            cursor = conn.cursor()
-            try:
-                # Create admin account in master database
-                cursor.execute(
-                    "INSERT INTO admins (username, email, password) VALUES (%s, %s, %s)",
-                    (username, email, hash_password(password))
-                )
-                admin_id = cursor.lastrowid
-                
-                conn.commit()
-                
-                # Automatically log in the user after successful signup
-                session['admin_id'] = admin_id
-                session['username'] = username
-                session['email'] = email
-                
-                flash('Account created successfully! Welcome to your dashboard.', 'success')
-                return redirect(url_for('dashboard'))
-            except Error as e:
-                conn.rollback()
-                flash(f'Error creating account: {str(e)}', 'error')
-            finally:
+        if not conn:
+            flash('Database connection error. Please check your database configuration.', 'error')
+            return render_template('signup.html')
+        
+        cursor = conn.cursor()
+        try:
+            # Check if email already exists
+            cursor.execute("SELECT id FROM admins WHERE email = %s", (email,))
+            if cursor.fetchone():
+                flash('Email already registered. Please use a different email or login.', 'error')
                 cursor.close()
                 conn.close()
+                return render_template('signup.html')
+            
+            # Create admin account in master database
+            cursor.execute(
+                "INSERT INTO admins (username, email, password) VALUES (%s, %s, %s)",
+                (username, email, hash_password(password))
+            )
+            admin_id = cursor.lastrowid
+            
+            conn.commit()
+            
+            # Automatically log in the user after successful signup
+            session['admin_id'] = admin_id
+            session['username'] = username
+            session['email'] = email
+            
+            flash('Account created successfully! Welcome to your dashboard.', 'success')
+            return redirect(url_for('dashboard'))
+        except Error as e:
+            conn.rollback()
+            flash(f'Error creating account: {str(e)}', 'error')
+            return render_template('signup.html')
+        finally:
+            cursor.close()
+            conn.close()
     
     return render_template('signup.html')
 
@@ -225,7 +236,10 @@ def dashboard():
     cursor.execute("SELECT COUNT(*) as total FROM products WHERE admin_id = %s", (admin_id,))
     total_products = cursor.fetchone()['total']
     
-    cursor.execute("SELECT COUNT(*) as total FROM products WHERE admin_id = %s AND stock_quantity <= reorder_level", (admin_id,))
+    cursor.execute("SELECT COUNT(*) as total FROM products WHERE admin_id = %s AND stock_quantity = 0", (admin_id,))
+    out_of_stock = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM products WHERE admin_id = %s AND stock_quantity > 0 AND stock_quantity <= reorder_level", (admin_id,))
     low_stock = cursor.fetchone()['total']
     
     cursor.execute("SELECT COUNT(*) as total FROM suppliers WHERE admin_id = %s", (admin_id,))
@@ -304,6 +318,7 @@ def dashboard():
     return render_template('dashboard.html',
                          total_products=total_products,
                          low_stock=low_stock,
+                         out_of_stock=out_of_stock,
                          total_suppliers=total_suppliers,
                          total_buyers=total_buyers,
                          total_revenue=total_revenue,
@@ -374,22 +389,50 @@ def add_product():
     cursor = conn.cursor()
     
     try:
-        cursor.execute("""
-            INSERT INTO products (admin_id, sku, product_name, description, category, unit_price, 
-                                stock_quantity, reorder_level, max_stock_level, supplier_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            admin_id,
-            data.get('sku'),
-            data.get('product_name'),
-            data.get('description'),
-            data.get('category'),
-            data.get('unit_price'),
-            data.get('stock_quantity'),
-            data.get('reorder_level'),
-            data.get('max_stock_level'),
-            data.get('supplier_id') if data.get('supplier_id') else None
-        ))
+        # Check if cost_price column exists
+        cursor.execute("SHOW COLUMNS FROM products LIKE 'cost_price'")
+        has_cost_price = cursor.fetchone() is not None
+        
+        cost_price = data.get('cost_price')
+        if not cost_price or float(cost_price) == 0:
+            # Default to 60% of unit_price if not provided
+            cost_price = float(data.get('unit_price')) * 0.60
+        
+        if has_cost_price:
+            cursor.execute("""
+                INSERT INTO products (admin_id, sku, product_name, description, category, unit_price, 
+                                    cost_price, stock_quantity, reorder_level, max_stock_level, supplier_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                admin_id,
+                data.get('sku'),
+                data.get('product_name'),
+                data.get('description'),
+                data.get('category'),
+                data.get('unit_price'),
+                cost_price,
+                data.get('stock_quantity'),
+                data.get('reorder_level'),
+                data.get('max_stock_level'),
+                data.get('supplier_id') if data.get('supplier_id') else None
+            ))
+        else:
+            cursor.execute("""
+                INSERT INTO products (admin_id, sku, product_name, description, category, unit_price, 
+                                    stock_quantity, reorder_level, max_stock_level, supplier_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                admin_id,
+                data.get('sku'),
+                data.get('product_name'),
+                data.get('description'),
+                data.get('category'),
+                data.get('unit_price'),
+                data.get('stock_quantity'),
+                data.get('reorder_level'),
+                data.get('max_stock_level'),
+                data.get('supplier_id') if data.get('supplier_id') else None
+            ))
         
         product_id = cursor.lastrowid
         
@@ -419,24 +462,54 @@ def edit_product(id):
     data = request.form
     
     try:
-        cursor.execute("""
-            UPDATE products 
-            SET sku=%s, product_name=%s, description=%s, category=%s, unit_price=%s,
-                stock_quantity=%s, reorder_level=%s, max_stock_level=%s, supplier_id=%s
-            WHERE admin_id=%s AND id=%s
-        """, (
-            data.get('sku'),
-            data.get('product_name'),
-            data.get('description'),
-            data.get('category'),
-            data.get('unit_price'),
-            data.get('stock_quantity'),
-            data.get('reorder_level'),
-            data.get('max_stock_level'),
-            data.get('supplier_id') if data.get('supplier_id') else None,
-            admin_id,
-            id
-        ))
+        # Check if cost_price column exists
+        cursor.execute("SHOW COLUMNS FROM products LIKE 'cost_price'")
+        has_cost_price = cursor.fetchone() is not None
+        
+        cost_price = data.get('cost_price')
+        if not cost_price or float(cost_price) == 0:
+            # Default to 60% of unit_price if not provided
+            cost_price = float(data.get('unit_price')) * 0.60
+        
+        if has_cost_price:
+            cursor.execute("""
+                UPDATE products 
+                SET sku=%s, product_name=%s, description=%s, category=%s, unit_price=%s,
+                    cost_price=%s, stock_quantity=%s, reorder_level=%s, max_stock_level=%s, supplier_id=%s
+                WHERE admin_id=%s AND id=%s
+            """, (
+                data.get('sku'),
+                data.get('product_name'),
+                data.get('description'),
+                data.get('category'),
+                data.get('unit_price'),
+                cost_price,
+                data.get('stock_quantity'),
+                data.get('reorder_level'),
+                data.get('max_stock_level'),
+                data.get('supplier_id') if data.get('supplier_id') else None,
+                admin_id,
+                id
+            ))
+        else:
+            cursor.execute("""
+                UPDATE products 
+                SET sku=%s, product_name=%s, description=%s, category=%s, unit_price=%s,
+                    stock_quantity=%s, reorder_level=%s, max_stock_level=%s, supplier_id=%s
+                WHERE admin_id=%s AND id=%s
+            """, (
+                data.get('sku'),
+                data.get('product_name'),
+                data.get('description'),
+                data.get('category'),
+                data.get('unit_price'),
+                data.get('stock_quantity'),
+                data.get('reorder_level'),
+                data.get('max_stock_level'),
+                data.get('supplier_id') if data.get('supplier_id') else None,
+                admin_id,
+                id
+            ))
         
         # Record transaction
         cursor.execute("""
@@ -623,9 +696,14 @@ def edit_sale(id):
             # Get form data
             buyer_id = request.form.get('buyer_id')
             sale_date = request.form.get('sale_date')
-            total_amount = request.form.get('total_amount')
+            total_amount = float(request.form.get('total_amount'))
+            payment_method = request.form.get('payment_method', 'Cash')
             status = request.form.get('status', 'Pending')
             notes = request.form.get('notes', '')
+            
+            # Auto-set amount_paid = total_amount (all sales fully paid)
+            amount_paid = total_amount
+            payment_status = 'Paid'
             
             # Get items from form
             product_ids = request.form.getlist('product_id[]')
@@ -655,9 +733,11 @@ def edit_sale(id):
             # Update sale info
             cursor.execute("""
                 UPDATE sales 
-                SET buyer_id=%s, sale_date=%s, total_amount=%s, status=%s, notes=%s
+                SET buyer_id=%s, sale_date=%s, total_amount=%s, payment_method=%s, 
+                    payment_status=%s, amount_paid=%s, status=%s, notes=%s
                 WHERE admin_id=%s AND id=%s
-            """, (buyer_id, sale_date, total_amount, status, notes, admin_id, id))
+            """, (buyer_id, sale_date, total_amount, payment_method, payment_status, 
+                  amount_paid, status, notes, admin_id, id))
 
             # Insert updated sale items and deduct stock
             for i in range(len(product_ids)):
@@ -1075,9 +1155,14 @@ def add_sale():
             # Get form data
             buyer_id = request.form.get('buyer_id')
             sale_date = request.form.get('sale_date')
-            total_amount = request.form.get('total_amount')
+            total_amount = float(request.form.get('total_amount'))
+            payment_method = request.form.get('payment_method', 'Cash')
             status = request.form.get('status', 'Pending')
             notes = request.form.get('notes', '')
+            
+            # Auto-set amount_paid = total_amount (all sales fully paid)
+            amount_paid = total_amount
+            payment_status = 'Paid'
             
             # Get items from form
             product_ids = request.form.getlist('product_id[]')
@@ -1099,9 +1184,11 @@ def add_sale():
             
             # Insert sale
             cursor.execute("""
-                INSERT INTO sales (admin_id, order_number, buyer_id, sale_date, total_amount, status, notes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (admin_id, order_number, buyer_id, sale_date, total_amount, status, notes))
+                INSERT INTO sales (admin_id, order_number, buyer_id, sale_date, total_amount, 
+                                 payment_method, payment_status, amount_paid, status, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (admin_id, order_number, buyer_id, sale_date, total_amount, 
+                  payment_method, payment_status, amount_paid, status, notes))
             sale_id = cursor.lastrowid
             
             # Insert sale items and update stock
@@ -1215,11 +1302,6 @@ def update_sale_status(id):
 
 # ============= REPORTS ROUTES =============
 
-@app.route('/reports')
-@login_required
-def reports():
-    return render_template('reports.html')
-
 @app.route('/reports/inventory')
 @login_required
 def inventory_report():
@@ -1262,16 +1344,55 @@ def inventory_report():
     
     return render_template('inventory_report.html', products=products, summary=summary)
 
-@app.route('/reports/sales')
+@app.route('/reports/financial')
 @login_required
-def sales_report():
-    start_date = request.args.get('start_date', (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+def financial_report():
+    start_date = request.args.get('start_date', datetime.now().replace(day=1).strftime('%Y-%m-%d'))
     end_date = request.args.get('end_date', datetime.now().strftime('%Y-%m-%d'))
     admin_id = get_admin_id()
     
     conn = get_db_connection(get_admin_db())
     cursor = conn.cursor(dictionary=True)
     
+    # ========== INCOME CALCULATION (Amount Actually Paid by Customers) ==========
+    cursor.execute("""
+        SELECT 
+            SUM(amount_paid) as total_income,
+            SUM(total_amount) as total_revenue,
+            COUNT(*) as total_sales
+        FROM sales
+        WHERE admin_id = %s AND sale_date BETWEEN %s AND %s AND status = 'Completed'
+    """, (admin_id, start_date, end_date))
+    income_data = cursor.fetchone()
+    total_income = income_data['total_income'] if income_data['total_income'] else 0
+    total_revenue = income_data['total_revenue'] if income_data['total_revenue'] else 0
+    
+    # ========== EXPENSE CALCULATION (Cost of Goods Sold) ==========
+    # Check if cost_price column exists
+    cursor.execute("SHOW COLUMNS FROM products LIKE 'cost_price'")
+    has_cost_price = cursor.fetchone() is not None
+    
+    if has_cost_price:
+        # Use actual cost_price from products table
+        cursor.execute("""
+            SELECT 
+                SUM(si.quantity * COALESCE(p.cost_price, p.unit_price * 0.60)) as total_expense
+            FROM sale_items si
+            JOIN products p ON si.product_id = p.id
+            JOIN sales s ON si.sale_id = s.id
+            WHERE s.admin_id = %s AND s.sale_date BETWEEN %s AND %s AND s.status = 'Completed'
+        """, (admin_id, start_date, end_date))
+        expense_data = cursor.fetchone()
+        total_expense = expense_data['total_expense'] if expense_data['total_expense'] else 0
+    else:
+        # Fallback: Use 60% of revenue as COGS estimate
+        total_expense = total_revenue * 0.60
+    
+    # ========== NET BALANCE (Profit/Loss) ==========
+    # Profit = Amount Paid - Cost of Goods Sold
+    net_balance = total_income - total_expense
+    
+    # ========== SALES DATA (for merged sales report) ==========
     cursor.execute("""
         SELECT 
             s.*,
@@ -1283,7 +1404,7 @@ def sales_report():
     """, (admin_id, admin_id, start_date, end_date))
     sales_data = cursor.fetchall()
     
-    # Calculate summary
+    # Sales summary
     cursor.execute("""
         SELECT 
             COUNT(*) as total_orders,
@@ -1295,7 +1416,7 @@ def sales_report():
         FROM sales
         WHERE admin_id = %s AND sale_date BETWEEN %s AND %s
     """, (admin_id, start_date, end_date))
-    summary = cursor.fetchone()
+    sales_summary = cursor.fetchone()
     
     # Top selling products
     cursor.execute("""
@@ -1307,32 +1428,12 @@ def sales_report():
         FROM sale_items si
         JOIN products p ON si.product_id = p.id AND p.admin_id = %s
         JOIN sales s ON si.sale_id = s.id AND s.admin_id = %s
-        WHERE s.sale_date BETWEEN %s AND %s
+        WHERE s.sale_date BETWEEN %s AND %s AND s.status = 'Completed'
         GROUP BY si.product_id
         ORDER BY total_sold DESC
         LIMIT 10
     """, (admin_id, admin_id, start_date, end_date))
     top_products = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return render_template('sales_report.html', 
-                         sales=sales_data, 
-                         summary=summary, 
-                         top_products=top_products,
-                         start_date=start_date,
-                         end_date=end_date)
-
-@app.route('/reports/financial')
-@login_required
-def financial_report():
-    start_date = request.args.get('start_date', datetime.now().replace(day=1).strftime('%Y-%m-%d'))
-    end_date = request.args.get('end_date', datetime.now().strftime('%Y-%m-%d'))
-    admin_id = get_admin_id()
-    
-    conn = get_db_connection(get_admin_db())
-    cursor = conn.cursor(dictionary=True)
     
     # Revenue by month
     cursor.execute("""
@@ -1362,17 +1463,7 @@ def financial_report():
     """, (admin_id, admin_id, start_date, end_date))
     category_revenue = cursor.fetchall()
     
-    # Financial summary
-    cursor.execute("""
-        SELECT 
-            SUM(total_amount) as total_revenue,
-            COUNT(*) as total_transactions,
-            AVG(total_amount) as avg_transaction
-        FROM sales
-        WHERE admin_id = %s AND sale_date BETWEEN %s AND %s AND status = 'Completed'
-    """, (admin_id, start_date, end_date))
-    summary = cursor.fetchone()
-    
+    # Current inventory value
     cursor.execute("SELECT SUM(stock_quantity * unit_price) as inventory_value FROM products WHERE admin_id = %s", (admin_id,))
     inventory_value = cursor.fetchone()
     
@@ -1380,9 +1471,14 @@ def financial_report():
     conn.close()
     
     return render_template('financial_report.html',
+                         total_income=total_income,
+                         total_expense=total_expense,
+                         net_balance=net_balance,
+                         sales=sales_data,
+                         sales_summary=sales_summary,
+                         top_products=top_products,
                          monthly_revenue=monthly_revenue,
                          category_revenue=category_revenue,
-                         summary=summary,
                          inventory_value=inventory_value,
                          start_date=start_date,
                          end_date=end_date)
@@ -1538,5 +1634,4 @@ def change_password():
     return redirect(url_for('profile'))
 
 if __name__ == '__main__':
-    # Set debug=False in production
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='127.0.0.1', port=5001)

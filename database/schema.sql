@@ -101,6 +101,9 @@ CREATE TABLE sales (
     buyer_id INT,
     sale_date DATE NOT NULL,
     total_amount DECIMAL(12, 2) NOT NULL,
+    payment_method ENUM('Cash', 'Credit Card', 'Debit Card', 'UPI', 'Bank Transfer', 'Cheque') DEFAULT 'Cash',
+    payment_status ENUM('Paid', 'Unpaid', 'Partial') DEFAULT 'Unpaid',
+    amount_paid DECIMAL(12, 2) DEFAULT 0.00,
     status ENUM('Pending', 'Completed', 'Cancelled') DEFAULT 'Pending',
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -111,7 +114,9 @@ CREATE TABLE sales (
     INDEX idx_admin_id (admin_id),
     INDEX idx_order_number (order_number),
     INDEX idx_sale_date (sale_date),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_payment_status (payment_status),
+    CONSTRAINT chk_sales_amount_paid CHECK (amount_paid >= 0)
 ) ENGINE=InnoDB;
 
 -- ============================================
