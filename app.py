@@ -7,8 +7,13 @@ import re
 import os
 from functools import wraps
 
-app = Flask(__name__)
-app.secret_key = 'dev-secret-key-change-in-production'
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, 'templates'),
+    static_folder=os.path.join(BASE_DIR, 'static')
+)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # ============= VALIDATION FUNCTIONS =============
 
@@ -61,11 +66,12 @@ def validate_contact_person(name):
         return True, ""  # Contact person is optional
     return validate_name(name, "Contact person name")
 
-# Database Configuration
-DB_HOST = 'localhost'
-DB_USER = 'root'
-DB_PASSWORD = 'dolen@123'
-MASTER_DB = 'inventory_master'
+# Database Configuration (Supports Environment Variables for Cloud Deployments like Vercel)
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_USER = os.environ.get('DB_USER', 'root')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'dolen@123')
+DB_PORT = int(os.environ.get('DB_PORT', 3306))
+MASTER_DB = os.environ.get('DB_NAME', 'inventory_master')
 
 # Database Connection Helper
 def get_db_connection(database=None):
@@ -74,7 +80,8 @@ def get_db_connection(database=None):
         config = {
             'host': DB_HOST,
             'user': DB_USER,
-            'password': DB_PASSWORD
+            'password': DB_PASSWORD,
+            'port': DB_PORT
         }
         if database:
             config['database'] = database
