@@ -1,11 +1,11 @@
 # Smart Inventory System (InvenLogic Pro)
 
-[![Live Demo](https://img.shields.io/badge/Vercel-Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://smart-inventory-system-dolendx7.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Vercel-Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://smart-inventory-system-teal.vercel.app)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.0.0-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com)
 
-🌐 **Live Deployment URL:** [https://smart-inventory-system-dolendx7.vercel.app](https://smart-inventory-system-dolendx7.vercel.app)
+🌐 **Live Deployment URL:** [https://smart-inventory-system-teal.vercel.app](https://smart-inventory-system-teal.vercel.app)
 
 A full-featured web-based inventory management system built with Flask and MySQL. Designed for modern businesses to manage products, suppliers, buyers, sales, transactions, and real-time stock levels from a unified dashboard.
 
@@ -39,12 +39,9 @@ This repository is pre-configured for automated serverless deployment on [Vercel
    - Link your GitHub repository `dolendx7/Smart_inventory_System`.
    - Vercel automatically detects `vercel.json` and Python functions in `api/`.
 
-2. **Domain / URL Configuration:**
-   - In **Project Settings** > **Domains**, assign:
-     ```
-     smart-inventory-system-dolendx7.vercel.app
-     ```
-     *(or `smart-inventory-system.vercel.app` if available)*.
+2. **Live Domain:**
+   - **Production URL:** [https://smart-inventory-system-teal.vercel.app](https://smart-inventory-system-teal.vercel.app)
+   - You can also add custom domains in **Project Settings** > **Domains**.
 
 3. **Configure Environment Variables in Vercel:**
    Because Vercel serverless runs in the cloud, connect it to a free cloud MySQL database (e.g. [TiDB Cloud](https://tidbcloud.com/), [Aiven](https://aiven.io/), or [Railway](https://railway.app/)):
@@ -108,8 +105,6 @@ Simply double-click **`run.bat`** (or execute `.\run.ps1` in PowerShell). It aut
 
 ```
 Smart_Inventory_System/
-├── api/
-│   └── index.py            # Vercel serverless entrypoint
 ├── database/
 │   └── schema.sql          # MySQL database schema & tables
 ├── static/
@@ -117,7 +112,6 @@ Smart_Inventory_System/
 │   └── js/                 # Client scripts & chart logic
 ├── templates/              # HTML templates
 ├── app.py                  # Core Flask application & routes
-├── vercel.json             # Vercel deployment & rewrite configuration
 ├── run.bat                 # 1-click Windows launcher
 ├── run.ps1                 # PowerShell startup script
 ├── requirements.txt        # Python dependencies
@@ -133,6 +127,6 @@ To display the live link in the **About** section on GitHub:
 2. In the right-hand sidebar, click the **⚙️ (gear icon)** next to **About**.
 3. In the **Website** field, enter:
    ```
-   https://smart-inventory-system-dolendx7.vercel.app
+   https://smart-inventory-system-teal.vercel.app
    ```
 4. Check **Use your README**, add topics like `flask`, `mysql`, `inventory-management`, `vercel`, and click **Save changes**.
