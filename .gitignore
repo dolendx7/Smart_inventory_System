@@ -5,6 +5,7 @@ __pycache__/
 venv/
 env/
 .env
+.vercel/
 
 # IDE & Editor
 .vscode/
@@ -16,3 +17,6 @@ env/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+.vercel
+.env*
